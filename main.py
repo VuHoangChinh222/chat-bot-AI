@@ -276,7 +276,13 @@ THÔNG TIN CÁC SẢN PHẨM PHÙ HỢP TRONG CỬA HÀNG:
                 print(f"Gemini API Exception: {e}")
                 yield "[Hệ thống]: Hiện tại máy chủ AI của Google đang quá tải (503 Service Unavailable) hoặc vượt quá hạn mức yêu cầu. Vui lòng gửi lại tin nhắn sau vài giây."
                     
+        headers = {
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no"
+        }
+        
         # Trả về Stream thẳng xuống Frontend
-        return StreamingResponse(stream_generator(), media_type="text/plain")
+        return StreamingResponse(stream_generator(), media_type="text/plain", headers=headers)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
