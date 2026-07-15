@@ -234,14 +234,26 @@ async def chat_bot(chat: ChatMessage):
     """API để Frontend gọi vào khi Khách nhắn tin"""
     try:
         import asyncio
-        results = await asyncio.to_thread(
-            collection.query,
-            query_texts=[chat.message],
-            n_results=3
-        )
         
-        # 3. Lắp ráp dữ liệu sản phẩm tìm được
-        context_docs = results['documents'][0] if results['documents'] else []
+        # Kiểm tra xem câu hỏi có phải dạng tổng quan hoặc phân tích toàn cửa hàng không
+        msg_lower = chat.message.lower()
+        global_keywords = ["đắt nhất", "mắc nhất", "cao nhất", "rẻ nhất", "thấp nhất", "bán chạy", "best seller", "hot nhất", "tất cả", "danh sách", "bao nhiêu sản phẩm", "phổ biến nhất"]
+        is_global = any(kw in msg_lower for kw in global_keywords)
+        
+        if is_global:
+            # Lấy toàn bộ sản phẩm trong ChromaDB để AI có cái nhìn toàn cảnh
+            results = await asyncio.to_thread(collection.get)
+            context_docs = results.get('documents', []) if results else []
+        else:
+            # Truy vấn Vector Search lấy top 3 sản phẩm phù hợp nhất
+            results = await asyncio.to_thread(
+                collection.query,
+                query_texts=[chat.message],
+                n_results=3
+            )
+            context_docs = results.get('documents', [[]])[0] if results and results.get('documents') else []
+        
+        # Lắp ráp dữ liệu sản phẩm tìm được
         context_text = "\n\n---\n\n".join(context_docs)
         
         # Nếu cửa hàng chưa có sản phẩm nào
